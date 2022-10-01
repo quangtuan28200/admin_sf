@@ -1,3 +1,4 @@
+/* @import 'antd/dist/antd.css';
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -10,4 +11,23 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
-}
+} */
+
+
+@import 'antd/dist/antd.css';
+
+/* dash board */
+.logo {
+    float: left;
+    font-size: 20px;
+    color: #fff;
+    font-weight: 500;
+    margin-right: 30px;
+  }
+  .site-layout .site-layout-background {
+    background: #fff;
+  }
+  [data-theme="dark"] .site-layout .site-layout-background {
+    background: #141414;
+  }
+  
