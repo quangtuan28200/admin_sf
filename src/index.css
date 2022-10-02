@@ -89,4 +89,18 @@ code {
       color: rgba(0, 0, 0, 0.85);
       margin-bottom: 0;
     }
+
+    .logOut{
+        float: right;
+        /* font-size: 20px; */
+        color: #fff;
+        font-weight: 500;
+        user-select: none; 
+        /* margin-right: 30px; */
+    }
+
+    .logOut:hover {
+        cursor: pointer;
+    }
+
   

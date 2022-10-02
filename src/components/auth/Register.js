@@ -9,31 +9,62 @@ import {
     TimePicker,
     Upload,
 } from "antd";
+import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import moment from "moment";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-// import { AuthContext } from "../../../contexts/AuthContext";
 import { COLORS } from "../../assets/constants/index";
+import { db } from "../../ConfigDB/firebase";
 
 export default function Register() {
+    const auth = getAuth();
     const navigate = useNavigate();
-
-    // Context
-    // const { registerStore, uploadImage, deleteImage } = useContext(AuthContext);
 
     // Local state
     const [registerForm, setRegisterForm] = useState({
-        avatar: null,
-        phone: "",
+        image: null,
+        email: "",
         password: "",
         confirmPassword: "",
+        phone: "",
         name: "",
         address: "",
         timeOpen: "",
         timeClose: "",
+        isLoading: false,
     });
 
     const [file, setFile] = useState(null);
+
+    const signUpHandle = () => {
+        setRegisterForm({ ...registerForm, isLoading: true });
+
+        createUserWithEmailAndPassword(
+            auth,
+            registerForm.email,
+            registerForm.password
+        )
+            .then((salonCredential) => {
+                const salon = salonCredential.user;
+                setDoc(doc(db, "salons", salon.uid), {
+                    id: salon.uid,
+                    email: registerForm.email,
+                    phone: registerForm.phone,
+                    name: registerForm.name,
+                    address: registerForm.address,
+                    timeOpen: registerForm.timeOpen,
+                    timeClose: registerForm.timeClose,
+                });
+            })
+            .then(() => {
+                message.info("Đăng ký Salon thành công");
+            })
+            .catch((error) => {
+                setRegisterForm({ ...registerForm, isLoading: false });
+                message.error(error.message);
+            });
+    };
 
     const onChangeRegisterForm = (event) => {
         // console.log(event);
@@ -44,9 +75,10 @@ export default function Register() {
     };
 
     const {
-        phone,
+        email,
         password,
         confirmPassword,
+        phone,
         name,
         address,
         timeOpen,
@@ -54,28 +86,12 @@ export default function Register() {
     } = registerForm;
 
     const handleRegister = () => {
-        // if (password !== confirmPassword) {
-        //     message.error("Mật khẩu và mật khẩu xác nhận không giống nhau");
-        // } else {
-        //     file &&
-        //         uploadImage(file)
-        //             .then((res) => {
-        //                 return registerStore({
-        //                     ...registerForm,
-        //                     avatar: res.data,
-        //                 });
-        //             })
-        //             .then((res) => {
-        //                 if (!res.success) {
-        //                     message.error(res.message);
-        //                     res.avatar && deleteImage(res.avatar);
-        //                 }
-        //             })
-        //             .catch((error) => {
-        //                 console.log(error);
-        //             });
-        // }
-        console.log({ ...registerForm, avatar: file });
+        if (password !== confirmPassword) {
+            message.error("Mật khẩu và mật khẩu xác nhận không giống nhau");
+        } else {
+            console.log({ ...registerForm, image: file });
+            signUpHandle();
+        }
     };
 
     const normFile = (e) => {
@@ -164,18 +180,19 @@ export default function Register() {
                         </Form.Item>
 
                         <Form.Item
-                            name="phone"
-                            label="SĐT"
+                            name="email"
+                            label="Email"
                             rules={[
                                 {
                                     required: true,
-                                    message: "Vui lòng nhập Số điện thoại",
+                                    type: "email",
+                                    message: "Vui lòng nhập Email",
                                 },
                             ]}
-                            value={phone}
+                            value={email}
                             onChange={onChangeRegisterForm}
                         >
-                            <Input name="phone" />
+                            <Input name="email" />
                         </Form.Item>
 
                         <Form.Item
@@ -206,13 +223,14 @@ export default function Register() {
                         >
                             <Input.Password name="confirmPassword" />
                         </Form.Item>
+
                         <Form.Item
-                            label="Tên cửa hàng"
+                            label="Tên Salon"
                             name="name"
                             rules={[
                                 {
                                     required: true,
-                                    message: "Vui lòng nhập tên cửa hàng",
+                                    message: "Vui lòng nhập tên Salon",
                                 },
                             ]}
                             value={name}
@@ -220,6 +238,22 @@ export default function Register() {
                         >
                             <Input name="name" />
                         </Form.Item>
+
+                        <Form.Item
+                            name="phone"
+                            label="SĐT"
+                            rules={[
+                                {
+                                    required: true,
+                                    message: "Vui lòng nhập Số điện thoại",
+                                },
+                            ]}
+                            value={phone}
+                            onChange={onChangeRegisterForm}
+                        >
+                            <Input name="phone" />
+                        </Form.Item>
+
                         <Form.Item
                             label="Địa chỉ"
                             name="address"
@@ -301,6 +335,7 @@ export default function Register() {
                                 }}
                                 type="primary"
                                 htmlType="submit"
+                                loading={registerForm.isLoading}
                             >
                                 Đăng ký
                             </Button>
