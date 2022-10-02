@@ -1,0 +1,55 @@
+<Row style={{ marginTop: 30 }}>
+                <Col span={24} offset={4}>
+                    <Row gutter={16}>
+                        <Col span={6}>
+                            <Statistic
+                                title="Số Đơn Hàng Đã Giao"
+                                // value={
+                                //     orders
+                                //         ? orders.filter(
+                                //               (order) =>
+                                //                   order.status === "THÀNH CÔNG"
+                                //           ).length
+                                //         : 0
+                                // }
+                                value={123}
+                            />
+                        </Col>
+                        <Col span={6}>
+                            <Statistic
+                                title="Số Đơn Hàng Đã Hủy"
+                                // value={
+                                //     orders
+                                //         ? orders.filter(
+                                //               (order) =>
+                                //                   order.status === "ĐÃ HỦY"
+                                //           ).length
+                                //         : 0
+                                // }
+                                value={123}
+                            />
+                        </Col>
+                        <Col span={6}>
+                            <Statistic
+                                title="Doanh Thu (VNĐ)"
+                                // value={Sum}
+                                value={50000}
+                                precision={0}
+                            />
+                        </Col>
+                    </Row>
+                    {/* <Divider />
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Statistic title="Nhận xét" value={1128} />
+                        </Col>
+                        <Col span={12}>
+                            <Statistic
+                                title="Đánh giá"
+                                value={4.5}
+                                suffix="/ 5"
+                            />
+                        </Col>
+                    </Row> */}
+                </Col>
+            </Row>

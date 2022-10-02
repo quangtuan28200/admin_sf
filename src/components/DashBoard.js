@@ -135,7 +135,7 @@ const DashBoard = () => {
             <Header
                 style={{
                     position: "fixed",
-                    zIndex: 1,
+                    zIndex: 100,
                     width: "100%",
                 }}
             >
