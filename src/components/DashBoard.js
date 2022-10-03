@@ -1,7 +1,9 @@
 import { Layout, Menu } from "antd";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { collection, onSnapshot } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { db } from "../ConfigDB/firebase";
 import Book from "./content/Book";
 import Salon from "./content/Salon";
 import Statistic from "./content/Statistic";
@@ -13,8 +15,12 @@ const DashBoard = () => {
     const navigate = useNavigate();
 
     const [isLoged, setIsLoged] = useState(false);
+    const [salon, setSalon] = useState(null);
 
-    // console.log("second");
+    // const salon = JSON.parse(localStorage.getItem("SALON"));
+
+    // console.log("dashboar:32:");
+    // console.log(salon);
 
     useEffect(() => {
         onAuthStateChanged(getAuth(), (salon) => {
@@ -22,12 +28,24 @@ const DashBoard = () => {
                 navigate("/login");
             } else {
                 setIsLoged(true);
+
+                onSnapshot(collection(db, "salons"), (snapshot) => {
+                    // eslint-disable-next-line array-callback-return
+                    snapshot.docs.map((salon) => {
+                        if (salon.data().id === getAuth().currentUser.uid) {
+                            // console.log("first");
+                            // console.log(salon.data());
+                            setSalon(salon.data());
+                        }
+                    });
+                });
             }
         });
     }, [navigate]);
 
     const logout = () => {
         signOut(getAuth()).then(() => {
+            localStorage.removeItem("SALON");
             navigate("/login");
         });
     };
@@ -106,7 +124,16 @@ const DashBoard = () => {
                                     path="/"
                                     element={<Navigate to="salon" />}
                                 />
-                                <Route path="/salon" element={<Salon />} />
+                                <Route
+                                    path="/salon"
+                                    element={
+                                        salon ? (
+                                            <Salon salon={salon} />
+                                        ) : (
+                                            <Loading />
+                                        )
+                                    }
+                                />
                                 <Route path="/book" element={<Book />} />
                                 <Route
                                     path="/statistic"

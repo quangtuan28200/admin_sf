@@ -16,11 +16,24 @@ import {
     TimePicker,
     Upload,
 } from "antd";
+import {
+    addDoc,
+    collection,
+    deleteDoc,
+    doc,
+    getDocs,
+    query,
+    where,
+} from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import moment from "moment";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { v4 } from "uuid";
+import { db, storage } from "../../ConfigDB/firebase";
 
-function Salon() {
+function Salon({ salon }) {
     const [image, setImage] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
     const [dataUpdateInfoForm, setDataUpdateInfoForm] = useState({
         image: "",
         name: "",
@@ -35,7 +48,7 @@ function Salon() {
         price: "",
     });
     const [dataUpdateServiceForm, setDataUpdateServiceForm] = useState({
-        _id: "",
+        id: "",
         image: "",
         name: "",
         price: "",
@@ -62,17 +75,51 @@ function Salon() {
 
     //handle service
     const handleAddService = () => {
-        console.log("addservice");
-        console.log({ ...dataAddServiceForm, image });
+        // console.log("addservice");
+        // console.log({ ...dataAddServiceForm, image });
+        setIsLoading(true);
+
+        //upload image
+        if (image !== null) {
+            const imageRef = ref(storage, `images/${image.name + v4()}`);
+            uploadBytes(imageRef, image).then(() => {
+                getDownloadURL(imageRef)
+                    .then((url) => {
+                        addDoc(collection(db, "services"), {
+                            image: url,
+                            name: dataAddServiceForm.name,
+                            price: dataAddServiceForm.price,
+                            salonId: salon.id,
+                        });
+                    })
+                    .then(() => {
+                        setDataAddServiceForm({
+                            image: "",
+                            name: "",
+                            price: "",
+                        });
+                        setIsLoading(false);
+                        getServices();
+                        setShowAddServiceModal(false);
+                        message.success("Thêm dịch vụ thành công");
+                    });
+            });
+        }
     };
+
     const handleUpdateService = () => {
         console.log({
             ...dataUpdateServiceForm,
             image: image ? image : dataUpdateServiceForm.image,
         });
     };
-    const handleDeleteService = (service) => {
-        console.log("delservice: " + service._id);
+
+    const handleDeleteService = async (service) => {
+        await deleteDoc(doc(db, "services", service.id)).then(() => {
+            setDataAddServiceForm({ image: "", name: "", price: "" });
+            getServices();
+            message.success("Xóa dịch vụ thành công");
+        });
     };
 
     const handleCloseAddServiceModal = () => {
@@ -84,6 +131,8 @@ function Salon() {
         setDataUpdateServiceForm(service);
         setShowUpdateServiceModal(true);
     };
+
+    // console.log(dataUpdateServiceForm);
 
     // handle image
 
@@ -122,31 +171,55 @@ function Salon() {
         return e?.fileList;
     };
 
-    // table
-    const services = [
-        {
-            _id: "1",
-            name: "Cắt tóc",
-            image: "https://banner2.cleanpng.com/20180401/wtw/kisspng-comb-scissors-hairdresser-beauty-parlour-beauty-parlor-images-5ac197031c6be2.4122468415226365471164.jpg",
-            price: 50000,
-        },
-        {
-            _id: "2",
-            name: "Gội đầu",
-            image: "https://i.pinimg.com/originals/2e/03/ee/2e03ee406fa9897fc823a1c7930eec9f.jpg",
-            price: 50000,
-        },
-    ];
+    const [services, setServices] = useState([]);
 
-    const servicesData = services.map((service) => {
-        return { ...service, key: service._id };
-    });
+    const getServices = async () => {
+        const servicesData = [];
+
+        const q = query(
+            collection(db, "services"),
+            where("salonId", "==", salon.id)
+        );
+
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((service) => {
+            // doc.data() is never undefined for query doc snapshots
+            servicesData.push({ ...service.data(), id: service.id });
+        });
+        setServices(servicesData);
+    };
+
+    useEffect(() => {
+        // const servicesData = [];
+        // onSnapshot(collection(db, "services"), (snapshot) => {
+        //     // eslint-disable-next-line array-callback-return
+        //     snapshot.docs.map((service) => {
+        //         if (service.data().salonId === salon.id) {
+        //             servicesData.push({ ...service.data(), id: service.id });
+        //         }
+        //     });
+        //     setServices(servicesData);
+        // });
+        getServices();
+        //eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // console.log(services);
+
+    const servicesData =
+        services &&
+        services.length > 0 &&
+        services.map((service) => {
+            return { ...service, key: service.id };
+        });
+
+    // console.log(servicesData);
 
     const columns = [
         {
             title: "ID",
-            dataIndex: "_id",
-            key: "_id",
+            dataIndex: "id",
+            key: "id",
         },
         {
             title: "Tên dịch vụ",
@@ -212,7 +285,7 @@ function Salon() {
                         <Image
                             style={{ objectFit: "contain" }}
                             height={400}
-                            src="https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png"
+                            src={salon.image}
                         />
                     </div>
                 </Col>
@@ -221,21 +294,19 @@ function Salon() {
                         <Descriptions
                             column={1}
                             title={
-                                <div style={{ fontSize: 30 }}>
-                                    Beauty Hair Salon
-                                </div>
+                                <div style={{ fontSize: 30 }}>{salon.name}</div>
                             }
                             labelStyle={{ fontSize: 20, fontWeight: 500 }}
                             contentStyle={{ fontSize: 20 }}
                         >
                             <Descriptions.Item label="Hoạt động">
-                                8:00-17:00
+                                {`${salon.timeOpen} - ${salon.timeClose}`}
                             </Descriptions.Item>
                             <Descriptions.Item label="Liên hệ">
-                                0387126304
+                                {salon.phone}
                             </Descriptions.Item>
                             <Descriptions.Item label="Địa chỉ">
-                                Tân Triều, Thanh Trì, Hà nội
+                                {salon.address}
                             </Descriptions.Item>
                         </Descriptions>
                         <div style={{ marginTop: 20 }}>
@@ -477,6 +548,7 @@ function Salon() {
                         key="submit"
                         type="primary"
                         onClick={handleAddService}
+                        loading={isLoading}
                     >
                         Thêm
                     </Button>,
@@ -484,8 +556,8 @@ function Salon() {
             >
                 <Form
                     name="basic"
-                    labelCol={{ span: 4 }}
-                    wrapperCol={{ span: 20 }}
+                    labelCol={{ span: 6 }}
+                    wrapperCol={{ span: 18 }}
                     fields={[
                         { name: "name", value: dataAddServiceForm.name },
                         { name: "price", value: dataAddServiceForm.price },
@@ -516,7 +588,7 @@ function Salon() {
                     </Form.Item>
 
                     <Form.Item
-                        label="Tên món"
+                        label="Tên dịch vụ"
                         name="name"
                         rules={[
                             {
@@ -584,19 +656,19 @@ function Salon() {
                     labelCol={{ span: 6 }}
                     wrapperCol={{ span: 18 }}
                     fields={[
-                        { name: "_id", value: dataUpdateServiceForm._id },
+                        { name: "id", value: dataUpdateServiceForm.id },
                         { name: "name", value: dataUpdateServiceForm.name },
                         { name: "price", value: dataUpdateServiceForm.price },
                     ]}
                     initialValues={{
-                        _id: dataUpdateServiceForm._id,
+                        id: dataUpdateServiceForm.id,
                         name: dataUpdateServiceForm.name,
                         price: dataUpdateServiceForm.price,
                     }}
                     autoComplete="off"
                     // onFinish={handleUpdateFood}
                 >
-                    <Form.Item label="ID" name="_id">
+                    <Form.Item label="ID" name="id">
                         <Input disabled />
                     </Form.Item>
 
@@ -618,15 +690,15 @@ function Salon() {
                             listType="picture"
                             maxCount={1}
                             beforeUpload={beforeUpload}
-                            defaultFileList={[
-                                {
-                                    uid: dataUpdateServiceForm._id,
-                                    name: "service image",
-                                    status: "done",
-                                    url: dataUpdateServiceForm.image,
-                                    thumbUrl: dataUpdateServiceForm.image,
-                                },
-                            ]}
+                            // defaultFileList={[
+                            //     {
+                            //         uid: dataUpdateServiceForm.id,
+                            //         name: "service image",
+                            //         status: "done",
+                            //         url: dataUpdateServiceForm.image,
+                            //         thumbUrl: dataUpdateServiceForm.image,
+                            //     },
+                            // ]}
                         >
                             <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
                         </Upload>

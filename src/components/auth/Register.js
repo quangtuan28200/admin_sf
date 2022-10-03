@@ -11,11 +11,13 @@ import {
 } from "antd";
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import moment from "moment";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { v4 } from "uuid";
 import { COLORS } from "../../assets/constants/index";
-import { db } from "../../ConfigDB/firebase";
+import { db, storage } from "../../ConfigDB/firebase";
 
 export default function Register() {
     const auth = getAuth();
@@ -35,7 +37,7 @@ export default function Register() {
         isLoading: false,
     });
 
-    const [file, setFile] = useState(null);
+    const [image, setImage] = useState(null);
 
     const signUpHandle = () => {
         setRegisterForm({ ...registerForm, isLoading: true });
@@ -47,18 +49,34 @@ export default function Register() {
         )
             .then((salonCredential) => {
                 const salon = salonCredential.user;
-                setDoc(doc(db, "salons", salon.uid), {
-                    id: salon.uid,
-                    email: registerForm.email,
-                    phone: registerForm.phone,
-                    name: registerForm.name,
-                    address: registerForm.address,
-                    timeOpen: registerForm.timeOpen,
-                    timeClose: registerForm.timeClose,
-                });
+
+                //upload image
+                if (image !== null) {
+                    const imageRef = ref(
+                        storage,
+                        `images/${image.name + v4()}`
+                    );
+                    uploadBytes(imageRef, image).then(() => {
+                        getDownloadURL(imageRef).then((url) => {
+                            // console.log(url);
+                            // store fireStore
+                            setDoc(doc(db, "salons", salon.uid), {
+                                id: salon.uid,
+                                image: url,
+                                email: registerForm.email,
+                                phone: registerForm.phone,
+                                name: registerForm.name,
+                                address: registerForm.address,
+                                timeOpen: registerForm.timeOpen,
+                                timeClose: registerForm.timeClose,
+                            });
+                        });
+                    });
+                }
             })
             .then(() => {
-                message.info("Đăng ký Salon thành công");
+                // message.info("Đăng ký Salon thành công");
+                setRegisterForm({ ...registerForm, isLoading: false });
             })
             .catch((error) => {
                 setRegisterForm({ ...registerForm, isLoading: false });
@@ -89,7 +107,7 @@ export default function Register() {
         if (password !== confirmPassword) {
             message.error("Mật khẩu và mật khẩu xác nhận không giống nhau");
         } else {
-            console.log({ ...registerForm, image: file });
+            // console.log({ ...registerForm, image: file });
             signUpHandle();
         }
     };
@@ -107,18 +125,7 @@ export default function Register() {
     const handleOnChangeAvatar = (e) => {
         const file = e.target.files[0];
         // console.log(file);
-        setFile(file);
-
-        // avatar && deleteImage(avatar);
-
-        // file &&
-        //     uploadImage(file)
-        //         .then((res) => {
-        //             setRegisterForm({ ...registerForm, avatar: res.data });
-        //         })
-        //         .catch((error) => {
-        //             console.log(error);
-        //         });
+        setImage(file);
     };
 
     const beforeUpload = (file) => {
