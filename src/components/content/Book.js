@@ -430,11 +430,6 @@ function Order() {
             key: "name",
         },
         {
-            title: "Số lượng",
-            dataIndex: "quantity",
-            key: "quantity",
-        },
-        {
             title: "Đơn giá",
             dataIndex: "price",
             key: "price",

@@ -52,34 +52,38 @@ export default function Register() {
 
                 //upload image
                 if (image !== null) {
-                    const imageRef = ref(
-                        storage,
-                        `images/${image.name + v4()}`
-                    );
+                    const uImageName = image.name + v4();
+                    const imageRef = ref(storage, `images/${uImageName}`);
+
                     uploadBytes(imageRef, image).then(() => {
                         getDownloadURL(imageRef).then((url) => {
                             // console.log(url);
                             // store fireStore
                             setDoc(doc(db, "salons", salon.uid), {
                                 id: salon.uid,
-                                image: url,
+                                image: { name: uImageName, url },
                                 email: registerForm.email,
                                 phone: registerForm.phone,
                                 name: registerForm.name,
                                 address: registerForm.address,
                                 timeOpen: registerForm.timeOpen,
                                 timeClose: registerForm.timeClose,
+                            }).then(() => {
+                                // message.info("Đăng ký Salon thành công");
+                                setRegisterForm({
+                                    ...registerForm,
+                                    isLoading: false,
+                                });
                             });
                         });
                     });
                 }
             })
-            .then(() => {
-                // message.info("Đăng ký Salon thành công");
-                setRegisterForm({ ...registerForm, isLoading: false });
-            })
             .catch((error) => {
-                setRegisterForm({ ...registerForm, isLoading: false });
+                setRegisterForm({
+                    ...registerForm,
+                    isLoading: false,
+                });
                 message.error(error.message);
             });
     };

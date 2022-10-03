@@ -23,9 +23,15 @@ import {
     doc,
     getDocs,
     query,
+    updateDoc,
     where,
 } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import {
+    deleteObject,
+    getDownloadURL,
+    ref,
+    uploadBytes,
+} from "firebase/storage";
 import moment from "moment";
 import React, { useEffect, useState } from "react";
 import { v4 } from "uuid";
@@ -59,18 +65,67 @@ function Salon({ salon }) {
 
     // handle update info
     const handleUpdateInfo = () => {
-        console.log({ ...dataUpdateInfoForm, image });
+        // console.log({ ...dataUpdateInfoForm, image });
+        setIsLoading(true);
+
+        if (image) {
+            const desertRef = ref(
+                storage,
+                `images/${dataUpdateInfoForm.image.name}`
+            );
+            // Delete the file
+            deleteObject(desertRef)
+                .then(() => {
+                    const uImageName = image.name + v4();
+                    const imageRef = ref(storage, `images/${uImageName}`);
+                    uploadBytes(imageRef, image).then(() => {
+                        getDownloadURL(imageRef).then((url) => {
+                            updateDoc(
+                                doc(db, "salons", dataUpdateInfoForm.id),
+                                {
+                                    image: { name: uImageName, url },
+                                    name: dataUpdateInfoForm.name,
+                                    phone: dataUpdateInfoForm.phone,
+                                    address: dataUpdateInfoForm.address,
+                                    timeOpen: dataUpdateInfoForm.timeOpen,
+                                    timeClose: dataUpdateInfoForm.timeClose,
+                                }
+                            ).then(() => {
+                                setIsLoading(false);
+                                setShowUpdateInfoModal(false);
+                                message.success("Cập nhật Salon thành công");
+                            });
+                        });
+                    });
+                })
+                .catch((error) => {
+                    setIsLoading(false);
+                    message.error(error.message);
+                });
+        } else {
+            updateDoc(doc(db, "salons", dataUpdateInfoForm.id), {
+                name: dataUpdateInfoForm.name,
+                phone: dataUpdateInfoForm.phone,
+                address: dataUpdateInfoForm.address,
+                timeOpen: dataUpdateInfoForm.timeOpen,
+                timeClose: dataUpdateInfoForm.timeClose,
+            })
+                .then(() => {
+                    setIsLoading(false);
+                    setShowUpdateInfoModal(false);
+                    message.success("Cập nhật Salon thành công");
+                })
+                .catch((error) => {
+                    setIsLoading(false);
+                    message.error(error.message);
+                });
+        }
     };
-    const handleCloseUpdateInfoModal = () => {
-        setShowUpdateInfoModal(false);
-        setDataUpdateInfoForm({
-            image: "",
-            name: "",
-            phone: "",
-            address: "",
-            timeOpen: "08:00",
-            timeClose: "17:00",
-        });
+
+    const handleShowUpdateInfoModal = () => {
+        setImage(null);
+        setDataUpdateInfoForm(salon);
+        setShowUpdateInfoModal(true);
     };
 
     //handle service
@@ -81,18 +136,16 @@ function Salon({ salon }) {
 
         //upload image
         if (image !== null) {
-            const imageRef = ref(storage, `images/${image.name + v4()}`);
+            const uImageName = image.name + v4();
+            const imageRef = ref(storage, `images/${uImageName}`);
             uploadBytes(imageRef, image).then(() => {
-                getDownloadURL(imageRef)
-                    .then((url) => {
-                        addDoc(collection(db, "services"), {
-                            image: url,
-                            name: dataAddServiceForm.name,
-                            price: dataAddServiceForm.price,
-                            salonId: salon.id,
-                        });
-                    })
-                    .then(() => {
+                getDownloadURL(imageRef).then((url) => {
+                    addDoc(collection(db, "services"), {
+                        image: { name: uImageName, url },
+                        name: dataAddServiceForm.name,
+                        price: dataAddServiceForm.price,
+                        salonId: salon.id,
+                    }).then(() => {
                         setDataAddServiceForm({
                             image: "",
                             name: "",
@@ -101,41 +154,99 @@ function Salon({ salon }) {
                         setIsLoading(false);
                         getServices();
                         setShowAddServiceModal(false);
-                        message.success("Thêm dịch vụ thành công");
+                        message.success("Thêm salon thành công");
                     });
+                });
             });
         }
     };
 
     const handleUpdateService = () => {
-        console.log({
-            ...dataUpdateServiceForm,
-            image: image ? image : dataUpdateServiceForm.image,
-        });
+        // console.log(dataUpdateServiceForm);
+        // console.log(image);
+        setIsLoading(true);
+
+        if (image) {
+            const desertRef = ref(
+                storage,
+                `images/${dataUpdateServiceForm.image.name}`
+            );
+
+            // Delete the file
+            deleteObject(desertRef).then(() => {
+                const uImageName = image.name + v4();
+                const imageRef = ref(storage, `images/${uImageName}`);
+                uploadBytes(imageRef, image).then(() => {
+                    getDownloadURL(imageRef).then((url) => {
+                        updateDoc(
+                            doc(db, "services", dataUpdateServiceForm.id),
+                            {
+                                image: { name: uImageName, url },
+                                name: dataUpdateServiceForm.name,
+                                price: dataUpdateServiceForm.price,
+                            }
+                        )
+                            .then(() => {
+                                setIsLoading(false);
+                                getServices();
+                                setShowUpdateServiceModal(false);
+                                message.success("Cập nhật dịch vụ thành công");
+                            })
+                            .catch((error) => {
+                                setIsLoading(false);
+                                message.error(error.message);
+                            });
+                    });
+                });
+            });
+        } else {
+            updateDoc(doc(db, "services", dataUpdateServiceForm.id), {
+                name: dataUpdateServiceForm.name,
+                price: dataUpdateServiceForm.price,
+            })
+                .then(() => {
+                    setIsLoading(false);
+                    getServices();
+                    setShowUpdateServiceModal(false);
+                    message.success("Cập nhật dịch vụ thành công");
+                })
+                .catch((error) => {
+                    setIsLoading(false);
+                    message.error(error.message);
+                });
+        }
     };
 
-    const handleDeleteService = async (service) => {
-        await deleteDoc(doc(db, "services", service.id)).then(() => {
-            setDataAddServiceForm({ image: "", name: "", price: "" });
-            getServices();
-            message.success("Xóa dịch vụ thành công");
-        });
+    const handleDeleteService = (service) => {
+        const desertRef = ref(storage, `images/${service.image.name}`);
+
+        // Delete the file
+        deleteObject(desertRef)
+            .then(() => {
+                deleteDoc(doc(db, "services", service.id));
+            })
+            .then(() => {
+                getServices();
+                message.success("Xóa dịch vụ thành công");
+            })
+            .catch((error) => {
+                message.error(error.message);
+            });
     };
 
     const handleCloseAddServiceModal = () => {
         setShowAddServiceModal(false);
         setDataAddServiceForm({ image: "", name: "", price: "" });
     };
+
     const handleShowUpdateServiceModal = (service) => {
         // console.log(service);
+        setImage(null);
         setDataUpdateServiceForm(service);
         setShowUpdateServiceModal(true);
     };
 
-    // console.log(dataUpdateServiceForm);
-
     // handle image
-
     const handleOnChangeImage = (e) => {
         const file = e.target.files[0];
         // console.log(file);
@@ -170,6 +281,8 @@ function Salon({ salon }) {
 
         return e?.fileList;
     };
+
+    // fetch SERVICES
 
     const [services, setServices] = useState([]);
 
@@ -231,7 +344,7 @@ function Salon({ salon }) {
             dataIndex: "image",
             key: "image",
             width: 100,
-            render: (_, { image }) => <Image width={100} src={image} />,
+            render: (_, { image }) => <Image width={100} src={image.url} />,
         },
         {
             title: "Giá (VNĐ)",
@@ -285,7 +398,7 @@ function Salon({ salon }) {
                         <Image
                             style={{ objectFit: "contain" }}
                             height={400}
-                            src={salon.image}
+                            src={salon.image.url}
                         />
                     </div>
                 </Col>
@@ -312,7 +425,7 @@ function Salon({ salon }) {
                         <div style={{ marginTop: 20 }}>
                             <Button
                                 type="primary"
-                                onClick={() => setShowUpdateInfoModal(true)}
+                                onClick={handleShowUpdateInfoModal}
                             >
                                 Chỉnh sửa thông tin
                             </Button>
@@ -367,15 +480,20 @@ function Salon({ salon }) {
                 title="Chỉnh sửa thông tin"
                 // transitionName=""
                 // maskTransitionName=""
-                onCancel={handleCloseUpdateInfoModal}
+
+                onCancel={() => setShowUpdateInfoModal(false)}
                 footer={[
-                    <Button key="back" onClick={handleCloseUpdateInfoModal}>
+                    <Button
+                        key="back"
+                        onClick={() => setShowUpdateInfoModal(false)}
+                    >
                         Đóng
                     </Button>,
                     <Button
                         key="submit"
                         type="primary"
                         onClick={handleUpdateInfo}
+                        loading={isLoading}
                     >
                         Cập nhật
                     </Button>,
@@ -401,7 +519,13 @@ function Salon({ salon }) {
                             ),
                         },
                     ]}
-                    // initialValues={{ remember: true }}
+                    initialValues={{
+                        name: dataUpdateInfoForm.name,
+                        phone: dataUpdateInfoForm.phone,
+                        address: dataUpdateInfoForm.address,
+                        timeOpen: moment(dataUpdateInfoForm.timeOpen, "HH:mm"),
+                        timeClose: moment(dataUpdateInfoForm.timeOpen, "HH:mm"),
+                    }}
                     autoComplete="off"
                 >
                     <Form.Item
@@ -443,7 +567,7 @@ function Salon({ salon }) {
                             })
                         }
                     >
-                        <Input />
+                        <Input name="name" />
                     </Form.Item>
 
                     <Form.Item
@@ -646,6 +770,7 @@ function Salon({ salon }) {
                         key="submit"
                         type="primary"
                         onClick={handleUpdateService}
+                        loading={isLoading}
                     >
                         Lưu thay đổi
                     </Button>,
@@ -656,22 +781,16 @@ function Salon({ salon }) {
                     labelCol={{ span: 6 }}
                     wrapperCol={{ span: 18 }}
                     fields={[
-                        { name: "id", value: dataUpdateServiceForm.id },
                         { name: "name", value: dataUpdateServiceForm.name },
                         { name: "price", value: dataUpdateServiceForm.price },
                     ]}
                     initialValues={{
-                        id: dataUpdateServiceForm.id,
                         name: dataUpdateServiceForm.name,
                         price: dataUpdateServiceForm.price,
                     }}
                     autoComplete="off"
                     // onFinish={handleUpdateFood}
                 >
-                    <Form.Item label="ID" name="id">
-                        <Input disabled />
-                    </Form.Item>
-
                     <Form.Item
                         name="image"
                         label="Ảnh"
