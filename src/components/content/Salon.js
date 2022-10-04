@@ -143,7 +143,7 @@ function Salon({ salon }) {
                     addDoc(collection(db, "services"), {
                         image: { name: uImageName, url },
                         name: dataAddServiceForm.name,
-                        price: dataAddServiceForm.price,
+                        price: parseInt(dataAddServiceForm.price),
                         salonId: salon.id,
                     }).then(() => {
                         setDataAddServiceForm({
