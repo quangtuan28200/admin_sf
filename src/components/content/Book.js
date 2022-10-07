@@ -5,162 +5,22 @@ import {
     Divider,
     Form,
     Input,
+    message,
     Row,
     Select,
     Space,
     Table,
 } from "antd";
 import Modal from "antd/lib/modal/Modal";
+import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 // import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import Highlighter from "react-highlight-words";
+import { db } from "../../ConfigDB/firebase";
 // import { apiUrl } from "../../contexts/constants";
 import { formatDate } from "../../utils/utils";
 
-const ordersData = [
-    {
-        _id: 1,
-        createAt: "2022/09/23 16:50",
-        user: {
-            name: "Bui Quang Tuan",
-            phone: "0387126034",
-            address: "Tân Triều, Thanh Trì, Hà Nội",
-        },
-        services: [
-            {
-                _id: 1,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 2,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 3,
-                name: "Gội đầu",
-                price: 50000,
-            },
-        ],
-        totalPrice: 500000,
-        status: "CHƯA THANH TOÁN",
-    },
-    {
-        _id: 2,
-        createAt: "2022/09/23 16:50",
-        user: {
-            name: "Bui Quang Tuan",
-            phone: "0387126034",
-            address: "Tân Triều, Thanh Trì, Hà Nội",
-        },
-        services: [
-            {
-                _id: 1,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 2,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 3,
-                name: "Gội đầu",
-                price: 50000,
-            },
-        ],
-        totalPrice: 500000,
-        status: "CHƯA THANH TOÁN",
-    },
-    {
-        _id: 3,
-        createAt: "2022/09/23 16:50",
-        user: {
-            name: "Bui Quang Tuan",
-            phone: "0387126034",
-            address: "Tân Triều, Thanh Trì, Hà Nội",
-        },
-        services: [
-            {
-                _id: 1,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 2,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 3,
-                name: "Gội đầu",
-                price: 50000,
-            },
-        ],
-        totalPrice: 500000,
-        status: "CHƯA THANH TOÁN",
-    },
-    {
-        _id: 4,
-        createAt: "2022/09/23 16:50",
-        user: {
-            name: "Bui Quang Tuan",
-            phone: "0387126034",
-            address: "Tân Triều, Thanh Trì, Hà Nội",
-        },
-        services: [
-            {
-                _id: 1,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 2,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 3,
-                name: "Gội đầu",
-                price: 50000,
-            },
-        ],
-        totalPrice: 500000,
-        status: "CHƯA THANH TOÁN",
-    },
-    {
-        _id: 5,
-        createAt: "2022/09/23 16:50",
-        user: {
-            name: "Bui Quang Tuan",
-            phone: "0387126034",
-            address: "Tân Triều, Thanh Trì, Hà Nội",
-        },
-        services: [
-            {
-                _id: 1,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 2,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 3,
-                name: "Gội đầu",
-                price: 50000,
-            },
-        ],
-        totalPrice: 500000,
-        status: "CHƯA THANH TOÁN",
-    },
-];
-
-function Order() {
+function Order({ salon }) {
     const [searchText, setSearchText] = useState("");
     const [searchedColumn, setSearchedColumn] = useState("");
     const [orders, setOrders] = useState(null);
@@ -172,16 +32,35 @@ function Order() {
 
     // console.log(orders);
 
+    const getOrders = () => {
+        onSnapshot(
+            collection(db, "orders"),
+            (snapshot) => {
+                const ordersData = [];
+                snapshot.docs.forEach((order) => {
+                    if (
+                        order.data().salon.id === salon.id &&
+                        order.data().status === "CHƯA THANH TOÁN"
+                    ) {
+                        ordersData.push({
+                            ...order.data(),
+                            id: order.id,
+                        });
+                    }
+                });
+                setOrders(ordersData);
+            },
+            (error) => {
+                message.error(error.message);
+            }
+        );
+    };
+    // console.log(salon);
+    // console.log(orders);
+
     useEffect(() => {
-        // axios
-        //     .get(`${apiUrl}/orders/getOrderWeb`)
-        //     .then((response) => {
-        //         if (response.data.success) {
-        //             setOrders(response.data.orders);
-        //         }
-        //     })
-        //     .catch((error) => message.error(error));
-        setOrders(ordersData);
+        getOrders();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleSearch = (selectedKeys, confirm, dataIndex) => {
@@ -201,22 +80,20 @@ function Order() {
         setShowDetailModal(true);
     };
 
-    const handleUpdateOrderStatus = () => {
+    const handleUpdateOrderStatus = (orderId) => {
         // console.log(status);
-        console.log("update status: " + status);
-        setShowDetailModal(false);
-
-        // axios
-        //     .put(`${apiUrl}/orders/update/${orderSelect._id}`, { status })
-        //     .then((res) => {
-        //         // console.log(res);
-        //         if (res.data.success) {
-        //             setOrderSelect(res.data.order);
-        //             message.success(res.data.message);
-        //             setShowDetailModal(false);
-        //         }
-        //     })
-        //     .catch((error) => message.error(error));
+        // console.log("update status: " + status + orderId);
+        updateDoc(doc(db, "orders", orderId), {
+            status: status,
+        })
+            .then(() => {
+                setShowDetailModal(false);
+                message.success("Cập nhật trạng thái thành công");
+            })
+            .catch((error) => {
+                setShowDetailModal(false);
+                message.error(error.message);
+            });
     };
 
     const getColumnSearchProps = (dataIndex) => ({
@@ -323,15 +200,15 @@ function Order() {
     const columns = [
         {
             title: "Mã đặt lịch",
-            dataIndex: "_id",
-            key: "_id",
-            ...getColumnSearchProps("_id"),
+            dataIndex: "id",
+            key: "id",
+            ...getColumnSearchProps("id"),
         },
         {
-            title: "Ngày đặt",
-            dataIndex: "createAt",
-            key: "createAt",
-            render: (_, { createAt }) => formatDate(createAt),
+            title: "Ngày hẹn",
+            dataIndex: "date",
+            key: "date",
+            render: (_, { date }) => formatDate(date),
         },
         {
             title: "Tên khách hàng",
@@ -420,8 +297,8 @@ function Order() {
     const columnOrderDetail = [
         {
             title: "STT",
-            // dataIndex: "_id",
-            key: "_id",
+            // dataIndex: "id",
+            key: "id",
             render: (text, record, index) => index + 1,
         },
         {
@@ -450,12 +327,7 @@ function Order() {
 
     return (
         <>
-            <Table
-                bordered
-                rowKey="_id"
-                columns={columns}
-                dataSource={orders}
-            />
+            <Table bordered rowKey="id" columns={columns} dataSource={orders} />
             {/* edit modal */}
             {orderSelect && (
                 <Modal
@@ -476,7 +348,9 @@ function Order() {
                         <Button
                             key="submit"
                             type="primary"
-                            onClick={handleUpdateOrderStatus}
+                            onClick={() =>
+                                handleUpdateOrderStatus(orderSelect.id)
+                            }
                         >
                             Cập nhật trạng thái
                         </Button>,
@@ -489,7 +363,7 @@ function Order() {
                         <Col span={24}>
                             <DescriptionItem
                                 title="Mã lịch hẹn"
-                                content={orderSelect._id}
+                                content={orderSelect.id}
                             />
                         </Col>
                     </Row>
@@ -497,7 +371,7 @@ function Order() {
                         <Col span={24}>
                             <DescriptionItem
                                 title="Thời gian đặt"
-                                content={formatDate(orderSelect.createAt)}
+                                content={formatDate(orderSelect.date)}
                             />
                         </Col>
                     </Row>
@@ -537,7 +411,7 @@ function Order() {
                     <p className="site-description-item-profile-p">Dịch vụ</p>
                     <Table
                         bordered
-                        rowKey="_id"
+                        rowKey="id"
                         columns={columnOrderDetail}
                         dataSource={orderSelect.services}
                         footer={() => (

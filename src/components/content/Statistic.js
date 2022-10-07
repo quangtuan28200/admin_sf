@@ -10,163 +10,48 @@ import {
     Statistic,
     Divider,
     Modal,
+    message,
 } from "antd";
+import { collection, onSnapshot } from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
 import Highlighter from "react-highlight-words";
+import { db } from "../../ConfigDB/firebase";
 import { formatDate } from "../../utils/utils";
 
-const ordersData = [
-    {
-        _id: 1,
-        createAt: "2022/09/23 16:50",
-        user: {
-            name: "Bui Quang Tuan",
-            phone: "0387126034",
-            address: "Tân Triều, Thanh Trì, Hà Nội",
-        },
-        services: [
-            {
-                _id: 1,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 2,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 3,
-                name: "Gội đầu",
-                price: 50000,
-            },
-        ],
-        totalPrice: 500000,
-        status: "ĐÃ THANH TOÁN",
-    },
-    {
-        _id: 2,
-        createAt: "2022/09/23 16:50",
-        user: {
-            name: "Bui Quang Tuan",
-            phone: "0387126034",
-            address: "Tân Triều, Thanh Trì, Hà Nội",
-        },
-        services: [
-            {
-                _id: 1,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 2,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 3,
-                name: "Gội đầu",
-                price: 50000,
-            },
-        ],
-        totalPrice: 500000,
-        status: "ĐÃ THANH TOÁN",
-    },
-    {
-        _id: 3,
-        createAt: "2022/09/23 16:50",
-        user: {
-            name: "Bui Quang Tuan",
-            phone: "0387126034",
-            address: "Tân Triều, Thanh Trì, Hà Nội",
-        },
-        services: [
-            {
-                _id: 1,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 2,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 3,
-                name: "Gội đầu",
-                price: 50000,
-            },
-        ],
-        totalPrice: 500000,
-        status: "ĐÃ THANH TOÁN",
-    },
-    {
-        _id: 4,
-        createAt: "2022/09/23 16:50",
-        user: {
-            name: "Bui Quang Tuan",
-            phone: "0387126034",
-            address: "Tân Triều, Thanh Trì, Hà Nội",
-        },
-        services: [
-            {
-                _id: 1,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 2,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 3,
-                name: "Gội đầu",
-                price: 50000,
-            },
-        ],
-        totalPrice: 500000,
-        status: "ĐÃ HỦY",
-    },
-    {
-        _id: 5,
-        createAt: "2022/09/23 16:50",
-        user: {
-            name: "Bui Quang Tuan",
-            phone: "0387126034",
-            address: "Tân Triều, Thanh Trì, Hà Nội",
-        },
-        services: [
-            {
-                _id: 1,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 2,
-                name: "Gội đầu",
-                price: 50000,
-            },
-            {
-                _id: 3,
-                name: "Gội đầu",
-                price: 50000,
-            },
-        ],
-        totalPrice: 500000,
-        status: "ĐÃ HỦY",
-    },
-];
-
-function StatisticScreen() {
+function StatisticScreen({ salon }) {
     const [searchText, setSearchText] = useState("");
     const [searchedColumn, setSearchedColumn] = useState("");
     const [orders, setOrders] = useState(null);
     const [orderSelect, setOrderSelect] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
 
+    const getOrders = () => {
+        onSnapshot(
+            collection(db, "orders"),
+            (snapshot) => {
+                const ordersData = [];
+                snapshot.docs.forEach((order) => {
+                    if (
+                        order.data().salon.id === salon.id &&
+                        order.data().status !== "CHƯA THANH TOÁN"
+                    ) {
+                        ordersData.push({
+                            ...order.data(),
+                            id: order.id,
+                        });
+                    }
+                });
+                setOrders(ordersData);
+            },
+            (error) => {
+                message.error(error.message);
+            }
+        );
+    };
+
     useEffect(() => {
-        setOrders(ordersData);
+        getOrders();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const searchInput = useRef(null);
@@ -308,15 +193,15 @@ function StatisticScreen() {
     const columns = [
         {
             title: "Mã đăt lịch",
-            dataIndex: "_id",
-            key: "_id",
-            ...getColumnSearchProps("_id"),
+            dataIndex: "id",
+            key: "id",
+            ...getColumnSearchProps("id"),
         },
         {
             title: "Ngày đặt",
-            dataIndex: "createAt",
-            key: "createAt",
-            render: (_, { createAt }) => formatDate(createAt),
+            dataIndex: "date",
+            key: "date",
+            render: (_, { date }) => formatDate(date),
         },
         {
             title: "Tên khách hàng",
@@ -403,8 +288,8 @@ function StatisticScreen() {
     const columnOrderDetail = [
         {
             title: "STT",
-            // dataIndex: "_id",
-            key: "_id",
+            // dataIndex: "id",
+            key: "id",
             render: (text, record, index) => index + 1,
         },
         {
@@ -426,19 +311,14 @@ function StatisticScreen() {
 
     return (
         <>
-            <Table
-                bordered
-                rowKey="_id"
-                columns={columns}
-                dataSource={orders}
-            />
+            <Table bordered rowKey="id" columns={columns} dataSource={orders} />
 
             <Row style={{ marginTop: 30 }}>
                 <Col span={24} offset={4}>
                     <Row gutter={16}>
                         <Col span={6}>
                             <Statistic
-                                title="Số Đơn Hàng Đã Giao"
+                                title="Đã Thanh Toán"
                                 value={
                                     orders
                                         ? orders.filter(
@@ -452,7 +332,7 @@ function StatisticScreen() {
                         </Col>
                         <Col span={6}>
                             <Statistic
-                                title="Số Đơn Hàng Đã Hủy"
+                                title="Đã Hủy"
                                 value={
                                     orders
                                         ? orders.filter(
@@ -474,12 +354,19 @@ function StatisticScreen() {
                     <Divider />
                     <Row gutter={16}>
                         <Col span={6}>
-                            <Statistic title="Nhận xét" value={1128} />
+                            <Statistic
+                                title="Nhận xét"
+                                value={salon.rateCount}
+                            />
                         </Col>
                         <Col span={6}>
                             <Statistic
                                 title="Đánh giá"
-                                value={4.5}
+                                value={
+                                    Math.round(
+                                        (salon.star / salon.rateCount) * 10
+                                    ) / 10
+                                }
                                 suffix="/ 5"
                             />
                         </Col>
@@ -513,7 +400,7 @@ function StatisticScreen() {
                         <Col span={24}>
                             <DescriptionItem
                                 title="Mã lịch hẹn"
-                                content={orderSelect._id}
+                                content={orderSelect.id}
                             />
                         </Col>
                     </Row>
@@ -521,7 +408,7 @@ function StatisticScreen() {
                         <Col span={24}>
                             <DescriptionItem
                                 title="Thời gian đặt"
-                                content={formatDate(orderSelect.createAt)}
+                                content={formatDate(orderSelect.date)}
                             />
                         </Col>
                     </Row>
@@ -561,7 +448,7 @@ function StatisticScreen() {
                     <p className="site-description-item-profile-p">Dịch vụ</p>
                     <Table
                         bordered
-                        rowKey="_id"
+                        rowKey="id"
                         columns={columnOrderDetail}
                         dataSource={orderSelect.services}
                         footer={() => (

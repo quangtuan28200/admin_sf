@@ -134,10 +134,13 @@ const DashBoard = () => {
                                         )
                                     }
                                 />
-                                <Route path="/book" element={<Book />} />
+                                <Route
+                                    path="/book"
+                                    element={<Book salon={salon} />}
+                                />
                                 <Route
                                     path="/statistic"
-                                    element={<Statistic />}
+                                    element={<Statistic salon={salon} />}
                                 />
                             </Routes>
                         </div>
