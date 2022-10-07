@@ -31,7 +31,7 @@ const DashBoard = () => {
 
                 onSnapshot(collection(db, "salons"), (snapshot) => {
                     // eslint-disable-next-line array-callback-return
-                    snapshot.docs.map((salon) => {
+                    snapshot.docs.forEach((salon) => {
                         if (salon.data().id === getAuth().currentUser.uid) {
                             // console.log("first");
                             // console.log(salon.data());

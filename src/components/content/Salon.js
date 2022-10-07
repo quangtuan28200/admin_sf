@@ -21,10 +21,8 @@ import {
     collection,
     deleteDoc,
     doc,
-    getDocs,
-    query,
+    onSnapshot,
     updateDoc,
-    where,
 } from "firebase/firestore";
 import {
     deleteObject,
@@ -286,20 +284,25 @@ function Salon({ salon }) {
 
     const [services, setServices] = useState([]);
 
-    const getServices = async () => {
-        const servicesData = [];
-
-        const q = query(
+    const getServices = () => {
+        onSnapshot(
             collection(db, "services"),
-            where("salonId", "==", salon.id)
+            (snapshot) => {
+                const servicesData = [];
+                snapshot.docs.forEach((service) => {
+                    if (service.data().salonId === salon.id) {
+                        servicesData.push({
+                            ...service.data(),
+                            id: service.id,
+                        });
+                    }
+                });
+                setServices(servicesData);
+            },
+            (error) => {
+                message.error(error.message);
+            }
         );
-
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach((service) => {
-            // doc.data() is never undefined for query doc snapshots
-            servicesData.push({ ...service.data(), id: service.id });
-        });
-        setServices(servicesData);
     };
 
     useEffect(() => {

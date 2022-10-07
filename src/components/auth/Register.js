@@ -68,6 +68,8 @@ export default function Register() {
                                 address: registerForm.address,
                                 timeOpen: registerForm.timeOpen,
                                 timeClose: registerForm.timeClose,
+                                star: 0,
+                                rateCount: 0,
                             }).then(() => {
                                 // message.info("Đăng ký Salon thành công");
                                 setRegisterForm({
