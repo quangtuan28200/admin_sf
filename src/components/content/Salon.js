@@ -33,6 +33,7 @@ import {
 import moment from "moment";
 import React, { useEffect, useState } from "react";
 import { v4 } from "uuid";
+import { distanceMatrixAPIKey } from "../../assets/constants";
 import { db, storage } from "../../ConfigDB/firebase";
 
 function Salon({ salon }) {
@@ -42,7 +43,11 @@ function Salon({ salon }) {
         image: "",
         name: "",
         phone: "",
-        address: "",
+        address: {
+            name: "",
+            latitude: "",
+            longitude: "",
+        },
         timeOpen: "08:00",
         timeClose: "17:00",
     });
@@ -62,62 +67,140 @@ function Salon({ salon }) {
     const [showUpdateServiceModal, setShowUpdateServiceModal] = useState(false);
 
     // handle update info
-    const handleUpdateInfo = () => {
+    const handleUpdateInfo = async () => {
         // console.log({ ...dataUpdateInfoForm, image });
         setIsLoading(true);
 
         if (image) {
-            const desertRef = ref(
-                storage,
-                `images/${dataUpdateInfoForm.image.name}`
-            );
-            // Delete the file
-            deleteObject(desertRef)
-                .then(() => {
-                    const uImageName = image.name + v4();
-                    const imageRef = ref(storage, `images/${uImageName}`);
-                    uploadBytes(imageRef, image).then(() => {
-                        getDownloadURL(imageRef).then((url) => {
-                            updateDoc(
-                                doc(db, "salons", dataUpdateInfoForm.id),
-                                {
-                                    image: { name: uImageName, url },
-                                    name: dataUpdateInfoForm.name,
-                                    phone: dataUpdateInfoForm.phone,
-                                    address: dataUpdateInfoForm.address,
-                                    timeOpen: dataUpdateInfoForm.timeOpen,
-                                    timeClose: dataUpdateInfoForm.timeClose,
-                                }
-                            ).then(() => {
-                                setIsLoading(false);
-                                setShowUpdateInfoModal(false);
-                                message.success("Cập nhật Salon thành công");
-                            });
-                        });
-                    });
-                })
-                .catch((error) => {
-                    setIsLoading(false);
-                    message.error(error.message);
+            try {
+                const desertRef = ref(
+                    storage,
+                    `images/${dataUpdateInfoForm.image.name}`
+                );
+                await deleteObject(desertRef);
+
+                const uImageName = image.name + v4();
+                const imageRef = ref(storage, `images/${uImageName}`);
+
+                await uploadBytes(imageRef, image);
+                const url = await getDownloadURL(imageRef);
+
+                // console.log("url: " + url);
+
+                const response = await fetch(
+                    `https://api.distancematrix.ai/maps/api/geocode/json?address=${dataUpdateInfoForm.address.name}&key=${distanceMatrixAPIKey}`,
+                    {
+                        method: "GET",
+                    }
+                );
+
+                const geoCode = await response.json();
+                const location = geoCode.result[0].geometry.location;
+
+                await updateDoc(doc(db, "salons", dataUpdateInfoForm.id), {
+                    image: { name: uImageName, url },
+                    name: dataUpdateInfoForm.name,
+                    phone: dataUpdateInfoForm.phone,
+                    address: {
+                        name: dataUpdateInfoForm.address.name,
+                        latitude: location.lat,
+                        longitude: location.lng,
+                    },
+                    timeOpen: dataUpdateInfoForm.timeOpen,
+                    timeClose: dataUpdateInfoForm.timeClose,
                 });
+
+                setIsLoading(false);
+                setShowUpdateInfoModal(false);
+                message.success("Cập nhật Salon thành công");
+            } catch (error) {
+                setIsLoading(false);
+                message.error(error.message);
+            }
         } else {
-            updateDoc(doc(db, "salons", dataUpdateInfoForm.id), {
-                name: dataUpdateInfoForm.name,
-                phone: dataUpdateInfoForm.phone,
-                address: dataUpdateInfoForm.address,
-                timeOpen: dataUpdateInfoForm.timeOpen,
-                timeClose: dataUpdateInfoForm.timeClose,
-            })
-                .then(() => {
-                    setIsLoading(false);
-                    setShowUpdateInfoModal(false);
-                    message.success("Cập nhật Salon thành công");
-                })
-                .catch((error) => {
-                    setIsLoading(false);
-                    message.error(error.message);
+            try {
+                const response = await fetch(
+                    `https://api.distancematrix.ai/maps/api/geocode/json?address=${dataUpdateInfoForm.address.name}&key=${distanceMatrixAPIKey}`,
+                    {
+                        method: "GET",
+                    }
+                );
+
+                const geoCode = await response.json();
+                const location = geoCode.result[0].geometry.location;
+                updateDoc(doc(db, "salons", dataUpdateInfoForm.id), {
+                    name: dataUpdateInfoForm.name,
+                    phone: dataUpdateInfoForm.phone,
+                    address: {
+                        name: dataUpdateInfoForm.address.name,
+                        latitude: location.lat,
+                        longitude: location.lng,
+                    },
+                    timeOpen: dataUpdateInfoForm.timeOpen,
+                    timeClose: dataUpdateInfoForm.timeClose,
                 });
+
+                setIsLoading(false);
+                setShowUpdateInfoModal(false);
+                message.success("Cập nhật Salon thành công");
+            } catch (error) {
+                setIsLoading(false);
+                message.error(error.message);
+            }
         }
+
+        // if (image) {
+        //     const desertRef = ref(
+        //         storage,
+        //         `images/${dataUpdateInfoForm.image.name}`
+        //     );
+        //     // Delete the file
+        //     deleteObject(desertRef)
+        //         .then(() => {
+        //             const uImageName = image.name + v4();
+        //             const imageRef = ref(storage, `images/${uImageName}`);
+        //             uploadBytes(imageRef, image).then(() => {
+        //                 getDownloadURL(imageRef).then((url) => {
+        //                     updateDoc(
+        //                         doc(db, "salons", dataUpdateInfoForm.id),
+        //                         {
+        //                             image: { name: uImageName, url },
+        //                             name: dataUpdateInfoForm.name,
+        //                             phone: dataUpdateInfoForm.phone,
+        //                             address: dataUpdateInfoForm.address,
+        //                             timeOpen: dataUpdateInfoForm.timeOpen,
+        //                             timeClose: dataUpdateInfoForm.timeClose,
+        //                         }
+        //                     ).then(() => {
+        //                         setIsLoading(false);
+        //                         setShowUpdateInfoModal(false);
+        //                         message.success("Cập nhật Salon thành công");
+        //                     });
+        //                 });
+        //             });
+        //         })
+        //         .catch((error) => {
+        //             setIsLoading(false);
+        //             message.error(error.message);
+        //         });
+        // } else {
+        //     updateDoc(doc(db, "salons", dataUpdateInfoForm.id), {
+        //         name: dataUpdateInfoForm.name,
+        //         phone: dataUpdateInfoForm.phone,
+        //         address: dataUpdateInfoForm.address,
+        //         timeOpen: dataUpdateInfoForm.timeOpen,
+        //         timeClose: dataUpdateInfoForm.timeClose,
+        //     })
+        //         .then(() => {
+        //             setIsLoading(false);
+        //             setShowUpdateInfoModal(false);
+        //             message.success("Cập nhật Salon thành công");
+        //         })
+        //         .catch((error) => {
+        //             setIsLoading(false);
+        //             message.error(error.message);
+        //         });
+        // }
     };
 
     const handleShowUpdateInfoModal = () => {
@@ -422,7 +505,7 @@ function Salon({ salon }) {
                                 {salon.phone}
                             </Descriptions.Item>
                             <Descriptions.Item label="Địa chỉ">
-                                {salon.address}
+                                {salon.address.name}
                             </Descriptions.Item>
                         </Descriptions>
                         <div style={{ marginTop: 20 }}>
@@ -509,7 +592,10 @@ function Salon({ salon }) {
                     fields={[
                         { name: "name", value: dataUpdateInfoForm.name },
                         { name: "phone", value: dataUpdateInfoForm.phone },
-                        { name: "address", value: dataUpdateInfoForm.address },
+                        {
+                            name: "address",
+                            value: dataUpdateInfoForm.address.name,
+                        },
                         {
                             name: "timeOpen",
                             value: moment(dataUpdateInfoForm.timeOpen, "HH:mm"),
@@ -525,7 +611,7 @@ function Salon({ salon }) {
                     initialValues={{
                         name: dataUpdateInfoForm.name,
                         phone: dataUpdateInfoForm.phone,
-                        address: dataUpdateInfoForm.address,
+                        address: dataUpdateInfoForm.address.name,
                         timeOpen: moment(dataUpdateInfoForm.timeOpen, "HH:mm"),
                         timeClose: moment(dataUpdateInfoForm.timeOpen, "HH:mm"),
                     }}
@@ -604,7 +690,10 @@ function Salon({ salon }) {
                         onChange={(e) =>
                             setDataUpdateInfoForm({
                                 ...dataUpdateInfoForm,
-                                address: e.target.value,
+                                address: {
+                                    ...dataUpdateInfoForm.address,
+                                    name: e.target.value,
+                                },
                             })
                         }
                     >

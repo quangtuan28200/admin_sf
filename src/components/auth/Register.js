@@ -16,7 +16,7 @@ import moment from "moment";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 } from "uuid";
-import { COLORS } from "../../assets/constants/index";
+import { COLORS, distanceMatrixAPIKey } from "../../assets/constants/index";
 import { db, storage } from "../../ConfigDB/firebase";
 
 export default function Register() {
@@ -34,60 +34,178 @@ export default function Register() {
         address: "",
         timeOpen: "",
         timeClose: "",
-        isLoading: false,
     });
 
     const [image, setImage] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const signUpHandle = () => {
-        setRegisterForm({ ...registerForm, isLoading: true });
+    const signUpHandle = async () => {
+        setIsLoading(true);
 
-        createUserWithEmailAndPassword(
-            auth,
-            registerForm.email,
-            registerForm.password
-        )
-            .then((salonCredential) => {
-                const salon = salonCredential.user;
+        try {
+            const salonCredential = await createUserWithEmailAndPassword(
+                auth,
+                registerForm.email,
+                registerForm.password
+            );
 
-                //upload image
-                if (image !== null) {
-                    const uImageName = image.name + v4();
-                    const imageRef = ref(storage, `images/${uImageName}`);
+            // console.log("salonCredential: " + salonCredential);
 
-                    uploadBytes(imageRef, image).then(() => {
-                        getDownloadURL(imageRef).then((url) => {
-                            // console.log(url);
-                            // store fireStore
-                            setDoc(doc(db, "salons", salon.uid), {
-                                id: salon.uid,
-                                image: { name: uImageName, url },
-                                email: registerForm.email,
-                                phone: registerForm.phone,
-                                name: registerForm.name,
-                                address: registerForm.address,
-                                timeOpen: registerForm.timeOpen,
-                                timeClose: registerForm.timeClose,
-                                star: 0,
-                                rateCount: 0,
-                            }).then(() => {
-                                // message.info("Đăng ký Salon thành công");
-                                setRegisterForm({
-                                    ...registerForm,
-                                    isLoading: false,
-                                });
-                            });
-                        });
-                    });
-                }
-            })
-            .catch((error) => {
-                setRegisterForm({
-                    ...registerForm,
-                    isLoading: false,
+            //upload image
+            if (image !== null) {
+                const uImageName = image.name + v4();
+                const imageRef = ref(storage, `images/${uImageName}`);
+
+                await uploadBytes(imageRef, image);
+                const url = await getDownloadURL(imageRef);
+
+                // console.log("url: " + url);
+
+                const response = await fetch(
+                    `https://api.distancematrix.ai/maps/api/geocode/json?address=${registerForm.address}&key=${distanceMatrixAPIKey}`,
+                    {
+                        method: "GET",
+                    }
+                );
+
+                const geoCode = await response.json();
+                const location = geoCode.result[0].geometry.location;
+
+                // console.log("location: " + location);
+
+                // store fireStore
+                await setDoc(doc(db, "salons", salonCredential.user.uid), {
+                    id: salonCredential.user.uid,
+                    image: {
+                        name: uImageName,
+                        url,
+                    },
+                    email: registerForm.email,
+                    phone: registerForm.phone,
+                    name: registerForm.name,
+                    address: {
+                        name: registerForm.address,
+                        latitude: location.lat,
+                        longitude: location.lng,
+                    },
+                    timeOpen: registerForm.timeOpen,
+                    timeClose: registerForm.timeClose,
+                    star: 0,
+                    rateCount: 0,
                 });
-                message.error(error.message);
-            });
+
+                setIsLoading(false);
+            }
+        } catch (error) {
+            setIsLoading(false);
+            message.error(error.message);
+        }
+
+        // createUserWithEmailAndPassword(
+        //     auth,
+        //     registerForm.email,
+        //     registerForm.password
+        // )
+        //     .then((salonCredential) => {
+        //         const salon = salonCredential.user;
+
+        //         //upload image
+        //         if (image !== null) {
+        //             const uImageName = image.name + v4();
+        //             const imageRef = ref(storage, `images/${uImageName}`);
+
+        //             uploadBytes(imageRef, image)
+        //                 .then(() => {
+        //                     getDownloadURL(imageRef)
+        //                         .then((url) => {
+        //                             // console.log(url);
+        //                             // const location = geoCoding(registerForm.address);
+        //                             fetch(
+        //                                 `https://api.distancematrix.ai/maps/api/geocode/json?address=${address}&key=${distanceMatrixAPIKey}`,
+        //                                 {
+        //                                     method: "GET",
+        //                                 }
+        //                             )
+        //                                 .then((response) => response.json())
+        //                                 .then((json) => {
+        //                                     const location =
+        //                                         json.result[0].geometry
+        //                                             .location;
+
+        //                                     // store fireStore
+        //                                     setDoc(
+        //                                         doc(db, "salons", salon.uid),
+        //                                         {
+        //                                             id: salon.uid,
+        //                                             image: {
+        //                                                 name: uImageName,
+        //                                                 url,
+        //                                             },
+        //                                             email: registerForm.email,
+        //                                             phone: registerForm.phone,
+        //                                             name: registerForm.name,
+        //                                             address: {
+        //                                                 name: registerForm.address,
+        //                                                 latitude: location.lat,
+        //                                                 longitude: location.lng,
+        //                                             },
+        //                                             timeOpen:
+        //                                                 registerForm.timeOpen,
+        //                                             timeClose:
+        //                                                 registerForm.timeClose,
+        //                                             star: 0,
+        //                                             rateCount: 0,
+        //                                         }
+        //                                     )
+        //                                         .then(() => {
+        //                                             // message.info("Đăng ký Salon thành công");
+        //                                             setRegisterForm({
+        //                                                 ...registerForm,
+        //                                                 isLoading: false,
+        //                                             });
+        //                                         })
+        //                                         .catch((error) => {
+        //                                             setRegisterForm({
+        //                                                 ...registerForm,
+        //                                                 isLoading: false,
+        //                                             });
+        //                                             message.error(
+        //                                                 error.message
+        //                                             );
+        //                                         });
+        //                                 })
+        //                                 .catch((error) => {
+        //                                     setRegisterForm({
+        //                                         ...registerForm,
+        //                                         isLoading: false,
+        //                                     });
+        //                                     message.error(error.message);
+        //                                 });
+        //                         })
+        //                         .catch((error) => {
+        //                             setRegisterForm({
+        //                                 ...registerForm,
+        //                                 isLoading: false,
+        //                             });
+        //                             message.error(error.message);
+        //                         });
+        //                 })
+        //                 .catch((error) => {
+        //                     setRegisterForm({
+        //                         ...registerForm,
+        //                         isLoading: false,
+        //                     });
+        //                     message.error(error.message);
+        //                 });
+        //         }
+        //     })
+        //     .catch((error) => {
+        //         setRegisterForm({
+        //             ...registerForm,
+        //             isLoading: false,
+        //         });
+        //         message.error(error.message);
+        //     });
     };
 
     const onChangeRegisterForm = (event) => {
@@ -348,7 +466,7 @@ export default function Register() {
                                 }}
                                 type="primary"
                                 htmlType="submit"
-                                loading={registerForm.isLoading}
+                                loading={isLoading}
                             >
                                 Đăng ký
                             </Button>

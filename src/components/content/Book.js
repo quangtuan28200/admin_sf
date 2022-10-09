@@ -384,6 +384,14 @@ function Order({ salon }) {
                     <Row>
                         <Col span={24}>
                             <DescriptionItem
+                                title="ID"
+                                content={orderSelect.user.uid}
+                            />
+                        </Col>
+                    </Row>
+                    <Row>
+                        <Col span={24}>
+                            <DescriptionItem
                                 title="Họ và Tên"
                                 content={orderSelect.user.name}
                             />
@@ -401,7 +409,7 @@ function Order({ salon }) {
                         <Col span={24}>
                             <DescriptionItem
                                 title="Địa chỉ"
-                                content={orderSelect.user.address}
+                                content={orderSelect.user.address.name}
                             />
                         </Col>
                     </Row>
