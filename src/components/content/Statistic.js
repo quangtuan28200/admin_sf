@@ -356,7 +356,7 @@ function StatisticScreen({ salon }) {
                         <Col span={6}>
                             <Statistic
                                 title="Nhận xét"
-                                value={salon.rateCount}
+                                value={salon.rateCount - 1}
                             />
                         </Col>
                         <Col span={6}>

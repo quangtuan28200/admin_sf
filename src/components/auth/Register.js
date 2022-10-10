@@ -26,14 +26,14 @@ export default function Register() {
     // Local state
     const [registerForm, setRegisterForm] = useState({
         image: null,
-        email: "",
-        password: "",
-        confirmPassword: "",
-        phone: "",
-        name: "",
+        email: "s1@gmail.com",
+        password: "123123",
+        confirmPassword: "123123",
+        phone: "0387126031",
+        name: "Salon 1",
         address: "",
-        timeOpen: "",
-        timeClose: "",
+        timeOpen: "09:00",
+        timeClose: "17:00",
     });
 
     const [image, setImage] = useState(null);
@@ -90,8 +90,9 @@ export default function Register() {
                     },
                     timeOpen: registerForm.timeOpen,
                     timeClose: registerForm.timeClose,
-                    star: 0,
-                    rateCount: 0,
+                    star: 5,
+                    rateCount: 1,
+                    bookingCount: 0,
                 });
 
                 setIsLoading(false);
@@ -282,7 +283,13 @@ export default function Register() {
                         name="basic"
                         labelCol={{ span: 8 }}
                         wrapperCol={{ span: 16 }}
-                        initialValues={{ remember: true }}
+                        initialValues={{
+                            email: email,
+                            password: password,
+                            confirmPassword: confirmPassword,
+                            phone: phone,
+                            name: name,
+                        }}
                         autoComplete="off"
                         onFinish={handleRegister}
                     >
@@ -409,7 +416,7 @@ export default function Register() {
                                     message: "Vui lòng chọn thời gian mở cửa",
                                 },
                             ]}
-                            // initialValue={moment("13:30:56", "HH:mm:ss")}
+                            initialValue={moment("9:00", "HH:mm")}
                         >
                             <TimePicker
                                 format={"HH:mm"}
@@ -433,7 +440,7 @@ export default function Register() {
                                     message: "Vui lòng chọn thời gian đóng cửa",
                                 },
                             ]}
-                            // initialValue={moment("13:30:56", "HH:mm:ss")}
+                            initialValue={moment("17:00", "HH:mm")}
                         >
                             <TimePicker
                                 format={"HH:mm"}
