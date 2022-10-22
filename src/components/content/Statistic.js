@@ -207,7 +207,7 @@ function StatisticScreen({ salon }) {
             title: "Tên khách hàng",
             dataIndex: ["user", "name"],
             key: "userName",
-            width: 200,
+            width: 150,
             // sorter: (a, b) => a.customerName.length - b.customerName.length,
             ...getColumnSearchProps(["user", "name"]),
         },

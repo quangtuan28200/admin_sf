@@ -93,6 +93,7 @@ export default function Register() {
                     star: 5,
                     rateCount: 1,
                     bookingCount: 0,
+                    busyTimes: [],
                 });
 
                 setIsLoading(false);

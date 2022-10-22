@@ -12,7 +12,13 @@ import {
     Table,
 } from "antd";
 import Modal from "antd/lib/modal/Modal";
-import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
+import {
+    arrayRemove,
+    collection,
+    doc,
+    onSnapshot,
+    updateDoc,
+} from "firebase/firestore";
 // import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import Highlighter from "react-highlight-words";
@@ -80,20 +86,25 @@ function Order({ salon }) {
         setShowDetailModal(true);
     };
 
-    const handleUpdateOrderStatus = (orderId) => {
+    const handleUpdateOrderStatus = async (order) => {
         // console.log(status);
         // console.log("update status: " + status + orderId);
-        updateDoc(doc(db, "orders", orderId), {
-            status: status,
-        })
-            .then(() => {
-                setShowDetailModal(false);
-                message.success("Cập nhật trạng thái thành công");
-            })
-            .catch((error) => {
-                setShowDetailModal(false);
-                message.error(error.message);
+
+        try {
+            await updateDoc(doc(db, "orders", order.id), {
+                status: status,
             });
+
+            await updateDoc(doc(db, "salons", order.salon.id), {
+                busyTimes: arrayRemove(order.busyTime),
+            });
+
+            setShowDetailModal(false);
+            message.success("Cập nhật trạng thái thành công");
+        } catch (error) {
+            setShowDetailModal(false);
+            message.error(error.message);
+        }
     };
 
     const getColumnSearchProps = (dataIndex) => ({
@@ -348,9 +359,7 @@ function Order({ salon }) {
                         <Button
                             key="submit"
                             type="primary"
-                            onClick={() =>
-                                handleUpdateOrderStatus(orderSelect.id)
-                            }
+                            onClick={() => handleUpdateOrderStatus(orderSelect)}
                         >
                             Cập nhật trạng thái
                         </Button>,
@@ -455,6 +464,9 @@ function Order({ salon }) {
                                 </Select.Option>
                                 <Select.Option value={"ĐÃ THANH TOÁN"}>
                                     ĐÃ THANH TOÁN
+                                </Select.Option>
+                                <Select.Option value={"ĐÃ HỦY"}>
+                                    ĐÃ HỦY
                                 </Select.Option>
                             </Select>
                         </Form.Item>
