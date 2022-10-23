@@ -55,12 +55,14 @@ function Salon({ salon }) {
         image: "",
         name: "",
         price: "",
+        completionTime: "",
     });
     const [dataUpdateServiceForm, setDataUpdateServiceForm] = useState({
         id: "",
         image: "",
         name: "",
         price: "",
+        completionTime: "",
     });
     const [showAddServiceModal, setShowAddServiceModal] = useState(false);
     const [showUpdateInfoModal, setShowUpdateInfoModal] = useState(false);
@@ -225,12 +227,16 @@ function Salon({ salon }) {
                         image: { name: uImageName, url },
                         name: dataAddServiceForm.name,
                         price: parseInt(dataAddServiceForm.price),
+                        completionTime: parseInt(
+                            dataAddServiceForm.completionTime
+                        ),
                         salonId: salon.id,
                     }).then(() => {
                         setDataAddServiceForm({
                             image: "",
                             name: "",
                             price: "",
+                            completionTime: "",
                         });
                         setIsLoading(false);
                         getServices();
@@ -265,6 +271,8 @@ function Salon({ salon }) {
                                 image: { name: uImageName, url },
                                 name: dataUpdateServiceForm.name,
                                 price: dataUpdateServiceForm.price,
+                                completionTime:
+                                    dataUpdateServiceForm.completionTime,
                             }
                         )
                             .then(() => {
@@ -284,6 +292,7 @@ function Salon({ salon }) {
             updateDoc(doc(db, "services", dataUpdateServiceForm.id), {
                 name: dataUpdateServiceForm.name,
                 price: dataUpdateServiceForm.price,
+                completionTime: dataUpdateServiceForm.completionTime,
             })
                 .then(() => {
                     setIsLoading(false);
@@ -441,6 +450,12 @@ function Salon({ salon }) {
                     style: "currency",
                     currency: "VND",
                 }).format(price),
+        },
+        {
+            title: "Thời gian",
+            dataIndex: "completionTime",
+            key: "completionTime",
+            render: (_, { completionTime }) => completionTime + " phút",
         },
         {
             title: "Tùy chọn",
@@ -840,6 +855,25 @@ function Salon({ salon }) {
                     >
                         <Input />
                     </Form.Item>
+
+                    <Form.Item
+                        label="Thời gian"
+                        name="completionTime"
+                        rules={[
+                            {
+                                required: true,
+                                message: "Vui lòng nhập thời gian hoàn thành!",
+                            },
+                        ]}
+                        onChange={(e) =>
+                            setDataAddServiceForm({
+                                ...dataAddServiceForm,
+                                completionTime: e.target.value,
+                            })
+                        }
+                    >
+                        <Input />
+                    </Form.Item>
                 </Form>
             </Modal>
 
@@ -875,10 +909,15 @@ function Salon({ salon }) {
                     fields={[
                         { name: "name", value: dataUpdateServiceForm.name },
                         { name: "price", value: dataUpdateServiceForm.price },
+                        {
+                            name: "completionTime",
+                            value: dataUpdateServiceForm.completionTime,
+                        },
                     ]}
                     initialValues={{
                         name: dataUpdateServiceForm.name,
                         price: dataUpdateServiceForm.price,
+                        completionTime: dataUpdateServiceForm.completionTime,
                     }}
                     autoComplete="off"
                     // onFinish={handleUpdateFood}
@@ -952,6 +991,27 @@ function Salon({ salon }) {
                                 setDataUpdateServiceForm({
                                     ...dataUpdateServiceForm,
                                     price: parseInt(e.target.value),
+                                })
+                            }
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Thời gian"
+                        name="completionTime"
+                        rules={[
+                            {
+                                required: true,
+                                message: "Vui lòng nhập thời gian hoàn thành",
+                            },
+                        ]}
+                    >
+                        <Input
+                            name="completionTime"
+                            onChange={(e) =>
+                                setDataUpdateServiceForm({
+                                    ...dataUpdateServiceForm,
+                                    completionTime: parseInt(e.target.value),
                                 })
                             }
                         />

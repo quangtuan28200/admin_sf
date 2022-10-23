@@ -327,6 +327,12 @@ function Order({ salon }) {
                     currency: "VND",
                 }).format(price),
         },
+        {
+            title: "Thời gian",
+            dataIndex: "completionTime",
+            key: "completionTime",
+            render: (_, { completionTime }) => completionTime + " phút",
+        },
     ];
 
     const DescriptionItem = ({ title, content }) => (
